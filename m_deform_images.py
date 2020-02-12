@@ -67,3 +67,32 @@ f2 = ax2.imshow(img_us_ref, interpolation='none')
 ax2.set_title('2910 x 3010')
 fig1.colorbar(f2, ax=ax2)
 
+#%%                         
+# define displacement fields
+#define constant displacement
+x_def_const = 20
+y_def_const = 0
+
+x_us_mesh_def = x_us_mesh - x_def_const
+y_us_mesh_def = y_us_mesh - y_def_const
+
+x_us_mesh_defV = np.reshape(x_us_mesh_def,Nx_us*Ny_us)
+y_us_mesh_defV = np.reshape(y_us_mesh_def,Nx_us*Ny_us)
+
+img_us_refV = np.reshape(img_us_ref,Nx_us*Ny_us)
+
+print('Interpolating to deformed positions')
+# interpolate image to upsampled grid
+img_us_def = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (x_us_mesh, y_us_mesh), method ='cubic')
+
+fig1 = plt.figure() # create a figure with the default size 
+ax1 = fig1.add_subplot(2,2,1) 
+f1 = ax1.pcolor(img_us_ref)
+ax1.set_title('291 X 301')
+fig1.colorbar(f1, ax=ax1)
+
+im2 = np.random.rand(100,100)
+ax2 = fig1.add_subplot(2,2,2)
+f2 = ax2.imshow(img_us_def, interpolation='none')
+ax2.set_title('2910 x 3010')
+fig1.colorbar(f2, ax=ax2)
