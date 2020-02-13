@@ -36,14 +36,23 @@ os.chdir(r"Z:\Experiments\drop_tower\sa5_images")
 # varify the path using getcwd() 
 cwd = os.getcwd() 
 
-filename = cwd+'/im_test.jpg' # hardcode the location of the figure
+filename = cwd+'/img_test2.jpg' # hardcode the location of the figure
 
 img_ref = Image.open(filename) # open image
 
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
 imarray = np.asarray(img_ref) # convert image to array
 
-Ny, Nx = imarray.shape # find size of image
-imarray = np.reshape(imarray,Nx*Ny) # reshape to vector for griddata interpolation
+imarray_grey = rgb2gray(imarray)
+img_ref = imarray_grey 
+   
+plt.pcolor(imarray_grey, cmap=plt.get_cmap('gray'))
+plt.show()
+
+Ny, Nx = imarray_grey.shape # find size of image
+imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
 
 #%% Up sample image to perform sub-pixel interpolation
 sample_factor = 10 # integer scale factor for upsampled image resolution
@@ -73,20 +82,20 @@ img_us_ref = griddata((x_orig_meshV,y_orig_meshV), imarray, (x_us_mesh, y_us_mes
 
 # plot diagnostic figures - original resolution reference image and upsampled reference image
 fig1 = plt.figure() # create a figure with the default size 
-plt.pcolor(img_ref, cmap = 'grey')
-plt.title('291 X 301')
+plt.pcolor(img_ref, cmap = 'gray')
+plt.title('225 X 225')
 plt.colorbar()
-plt.caxis([0, 255])
+plt.clim([0, 255])
 
 fig2 = plt.figure()
 plt.pcolor(img_us_ref, cmap = 'gray')
-plt.title('2910 x 3010')
+plt.title('2250 x 2250')
 plt.colorbar()
 plt.clim([0, 255])
 
 #%%  define displacement fields and interpolate                       
 # define displacement fields
-x_def_const = 50 #define constant x displacement
+x_def_const = 10 #define constant x displacement
 y_def_const = 0 #define constant y displacement
 
 x_us_mesh_def = x_us_mesh - x_def_const # shift the original upsampled x coordinates by the prescribed deformation
@@ -105,15 +114,14 @@ img_us_def = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (x_us_mesh, 
 fig1 = plt.figure() # create a figure with the default size 
 ax1 = fig1.add_subplot(2,2,1) 
 f1 = ax1.pcolor(img_us_ref)
-ax1.set_title('2910 X 3010')
+ax1.set_title('2250 X 2250')
 fig1.colorbar(f1, ax=ax1)
 
 fig2 = plt.figure()
 plt.pcolor(img_us_def, cmap = 'gray')
-plt.title('2910 x 3010 - deformed')
+plt.title('2250 x 2250 - deformed')
 plt.colorbar()
 plt.clim([0, 255])
-
 
 #%% down-sample to original image resolution
 img_def = np.zeros((Ny,Nx))
