@@ -55,7 +55,7 @@ Ny, Nx = imarray_grey.shape # find size of image
 imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
 
 #%% Up sample image to perform sub-pixel interpolation
-sample_factor = 10 # integer scale factor for upsampled image resolution
+sample_factor = 5 # integer scale factor for upsampled image resolution
 x_orig_vec = np.linspace(0,Nx,Nx) # original x coordinates in vector form
 y_orig_vec = np.linspace(0,Ny,Ny) # original y coordinates in vector form
 
@@ -83,23 +83,61 @@ img_us_ref = griddata((x_orig_meshV,y_orig_meshV), imarray, (x_us_mesh, y_us_mes
 # plot diagnostic figures - original resolution reference image and upsampled reference image
 fig1 = plt.figure() # create a figure with the default size 
 plt.pcolor(img_ref, cmap = 'gray')
-plt.title('225 X 225')
+plt.title('original resolution reference image')
 plt.colorbar()
 plt.clim([0, 255])
 
 fig2 = plt.figure()
 plt.pcolor(img_us_ref, cmap = 'gray')
-plt.title('2250 x 2250')
+plt.title('upsampled reference image')
 plt.colorbar()
 plt.clim([0, 255])
 
 #%%  define displacement fields and interpolate                       
-# define displacement fields
-x_def_const = 10 #define constant x displacement
-y_def_const = 0 #define constant y displacement
+# --------------------- define displacement fields ----------------------------
+x_def = 10 #define constant x displacement
+y_def = 0 #define constant y displacement
 
-x_us_mesh_def = x_us_mesh - x_def_const # shift the original upsampled x coordinates by the prescribed deformation
-y_us_mesh_def = y_us_mesh - y_def_const # shift the original upsampled y coordinates by the prescribed deformation
+# ----------------------- define distortion field -----------------------------
+# d^-1(x,y) = (1+p(x^2 + y^2))(1+pr^2)(x',y')
+x_def = np.zeros(img_us_ref.shape)
+y_def = np.zeros(img_us_ref.shape)
+
+# move origin to centre of images to fit traditional distortion model
+x_us_mesh_c = x_us_mesh-0.5*max(x_us_mesh[0,:])
+y_us_mesh_c = y_us_mesh-0.5*max(y_us_mesh[:,0])
+
+# distortion coefficients
+# create approx. 1 pixel displacement radial distortion in x and y
+k1 = -1.76e-10 # based on Table 1 in B. Pan et al. Systematic errors in two-dimensional digital image correlationdue to lens distortion, 2013 - adjusted for pixels instead of physical dimensions
+k2 = 0
+
+for i in range(0,Ny_us):
+    for j in range(0,Nx_us):
+        
+        r = (x_us_mesh_c[i][j]**2 + y_us_mesh_c[i][j]**2) # radius of given point from centre of image
+        
+        x_def[i,j] = -1*x_us_mesh_c[i][j]*(k1*r**2 + k2*r**4) # inverse x displacement caused by distortion
+        y_def[i,j] = -1*y_us_mesh_c[i][j]*(k1*r**2 + k2*r**4) # inverse y displacement caused by distortion         
+
+# diagnostic figure
+fig2 = plt.figure()
+plt.pcolor(x_def, cmap = 'gray')
+plt.title('upsampled x-displacement field')
+plt.colorbar()
+plt.clim([0, 255])
+
+fig2 = plt.figure()
+plt.pcolor(x_def, cmap = 'gray')
+plt.title('upsampled y-displacement field')
+plt.colorbar()
+plt.clim([0, 255])
+# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------- 
+
+# create deformed coordinate matrices based on prescribed displacement fields      
+x_us_mesh_def = x_us_mesh - x_def # shift the original upsampled x coordinates by the prescribed deformation
+y_us_mesh_def = y_us_mesh - y_def # shift the original upsampled y coordinates by the prescribed deformation
 
 x_us_mesh_defV = np.reshape(x_us_mesh_def,Nx_us*Ny_us) # deformed x coordinates from mesh in vector form for griddata interpolation 
 y_us_mesh_defV = np.reshape(y_us_mesh_def,Nx_us*Ny_us) # deformed y coordinates from mesh in vector form for griddata interpolation
@@ -114,12 +152,12 @@ img_us_def = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (x_us_mesh, 
 fig1 = plt.figure() # create a figure with the default size 
 ax1 = fig1.add_subplot(2,2,1) 
 f1 = ax1.pcolor(img_us_ref)
-ax1.set_title('2250 X 2250')
+ax1.set_title('upsampled reference image')
 fig1.colorbar(f1, ax=ax1)
 
 fig2 = plt.figure()
 plt.pcolor(img_us_def, cmap = 'gray')
-plt.title('2250 x 2250 - deformed')
+plt.title('upsampled deformed image')
 plt.colorbar()
 plt.clim([0, 255])
 
@@ -149,6 +187,6 @@ for i in range(0,Ny):
 # diagnostic figure - downsampled deformed image
 fig3 = plt.figure()
 plt.pcolor(img_def, cmap = 'gray')
-plt.title('291 x 301 - deformed')
+plt.title('original resolution deformed image')
 plt.colorbar()
 plt.clim([0, 255])
