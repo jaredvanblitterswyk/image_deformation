@@ -1,8 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb  4 13:05:34 2020
+===============================================================================
+Numerical Image Deformation - v 1.0
+===============================================================================
 
-@author: jcv
+This script loads in a single speckle pattern image and applies a prescribed
+deformation field to the pattern. The images are first super-sampled by a user-
+defined amount (integer multiple of original resolution) prior to deforming the
+image. The images are then downsampled to the original resolution. 
+
+Dependent files:
+This script has no dependency on functions aside from those defined here.
+
+This script requires the following inputs (formats):
+    i) speckle pattern image (.jpg)
+    ii) user defined deformation field
+    
+Author: Jared Van Blitterswyk
+Other contributors: N/A
+Date created: 02.04.2020  
+
+National Institute of Standards and Technology (NIST)
+Materials Measurement Science Division
+Material Measurement Laboratory  
 """
 import os
 from os import listdir
