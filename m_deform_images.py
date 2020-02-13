@@ -56,21 +56,21 @@ print('Upsampling image')
 img_us_ref = griddata((x_orig_meshV,y_orig_meshV), imarray, (x_us_mesh, y_us_mesh), method ='cubic')
 
 fig1 = plt.figure() # create a figure with the default size 
-ax1 = fig1.add_subplot(2,2,1) 
-f1 = ax1.pcolor(img_ref)
-ax1.set_title('291 X 301')
-fig1.colorbar(f1, ax=ax1)
+plt.pcolor(img_ref, cmap = 'grey')
+plt.title('291 X 301')
+plt.colorbar()
+plt.caxis([0, 255])
 
-im2 = np.random.rand(100,100)
-ax2 = fig1.add_subplot(2,2,2)
-f2 = ax2.imshow(img_us_ref, interpolation='none')
-ax2.set_title('2910 x 3010')
-fig1.colorbar(f2, ax=ax2)
+fig2 = plt.figure()
+plt.pcolor(img_us_ref, cmap = 'gray')
+plt.title('2910 x 3010')
+plt.colorbar()
+plt.clim([0, 255])
 
-#%%                         
+#%%  define displacement fields and interpolate                       
 # define displacement fields
 #define constant displacement
-x_def_const = 20
+x_def_const = 50
 y_def_const = 0
 
 x_us_mesh_def = x_us_mesh - x_def_const
@@ -91,8 +91,37 @@ f1 = ax1.pcolor(img_us_ref)
 ax1.set_title('291 X 301')
 fig1.colorbar(f1, ax=ax1)
 
-im2 = np.random.rand(100,100)
-ax2 = fig1.add_subplot(2,2,2)
-f2 = ax2.imshow(img_us_def, interpolation='none')
-ax2.set_title('2910 x 3010')
-fig1.colorbar(f2, ax=ax2)
+fig2 = plt.figure()
+plt.pcolor(img_us_def, cmap = 'gray')
+plt.title('2910 x 3010 - deformed')
+plt.colorbar()
+plt.clim([0, 255])
+
+
+#%% down-sample to original image resolution
+img_def = np.zeros((Ny,Nx))
+for i in range(0,Ny):
+    for j in range(0,Nx):
+        ind_row1 = i*sample_factor
+        ind_row2 = (i+1)*(sample_factor)-1
+        ind_col1 = j*sample_factor
+        ind_col2 = (j+1)*(sample_factor)-1
+        
+        if i ==0 and j ==0:
+            print(ind_row1)
+            print(ind_row2)
+            print(ind_col1)
+            print(ind_col2)
+        elif i ==5 and j ==0:
+            print(ind_row1)
+            print(ind_row2)
+            print(ind_col1)
+            print(ind_col2)
+        
+        img_def[i,j] = np.mean(img_us_def[ind_row1:ind_row2,ind_col1:ind_col2])
+
+fig3 = plt.figure()
+plt.pcolor(img_def, cmap = 'gray')
+plt.title('291 x 301 - deformed')
+plt.colorbar()
+plt.clim([0, 255])
