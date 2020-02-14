@@ -47,9 +47,6 @@ imarray = np.asarray(img_ref) # convert image to array
 
 imarray_grey = rgb2gray(imarray)
 img_ref = imarray_grey 
-   
-plt.pcolor(imarray_grey, cmap=plt.get_cmap('gray'))
-plt.show()
 
 Ny, Nx = imarray_grey.shape # find size of image
 imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
@@ -95,11 +92,14 @@ plt.clim([0, 255])
 
 #%%  define displacement fields and interpolate                       
 # --------------------- define displacement fields ----------------------------
+'''
 x_def = 10 #define constant x displacement
 y_def = 0 #define constant y displacement
+'''
 
 # ----------------------- define distortion field -----------------------------
 # d^-1(x,y) = (1+p(x^2 + y^2))(1+pr^2)(x',y')
+'''
 x_def = np.zeros(img_us_ref.shape)
 y_def = np.zeros(img_us_ref.shape)
 
@@ -109,7 +109,7 @@ y_us_mesh_c = y_us_mesh-0.5*max(y_us_mesh[:,0])
 
 # distortion coefficients
 # create approx. 1 pixel displacement radial distortion in x and y
-k1 = -1.76e-10 # based on Table 1 in B. Pan et al. Systematic errors in two-dimensional digital image correlationdue to lens distortion, 2013 - adjusted for pixels instead of physical dimensions
+k1 = -1.76e-10 # based on Table 1 in B. Pan et al. Systematic errors in two-dimensional digital image correlation due to lens distortion, 2013 - adjusted for pixels instead of physical dimensions
 k2 = 0
 
 for i in range(0,Ny_us):
@@ -118,20 +118,22 @@ for i in range(0,Ny_us):
         r = (x_us_mesh_c[i][j]**2 + y_us_mesh_c[i][j]**2) # radius of given point from centre of image
         
         x_def[i,j] = -1*x_us_mesh_c[i][j]*(k1*r**2 + k2*r**4) # inverse x displacement caused by distortion
-        y_def[i,j] = -1*y_us_mesh_c[i][j]*(k1*r**2 + k2*r**4) # inverse y displacement caused by distortion         
+        y_def[i,j] = -1*y_us_mesh_c[i][j]*(k1*r**2 + k2*r**4) # inverse y displacement caused by distortion     
+'''
+# ---------------------- define displacement field ----------------------------
+x_def = 0.5*np.sin(2*m.pi*x_us_mesh/Nx)
+y_def = np.zeros(img_us_ref.shape)
 
 # diagnostic figure
 fig2 = plt.figure()
 plt.pcolor(x_def, cmap = 'gray')
 plt.title('upsampled x-displacement field')
 plt.colorbar()
-plt.clim([0, 255])
 
 fig2 = plt.figure()
-plt.pcolor(x_def, cmap = 'gray')
+plt.pcolor(y_def, cmap = 'gray')
 plt.title('upsampled y-displacement field')
 plt.colorbar()
-plt.clim([0, 255])
 # -----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------- 
 
@@ -149,11 +151,11 @@ print('Interpolating to deformed positions')
 img_us_def = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (x_us_mesh, y_us_mesh), method ='cubic')
 
 # plot diagnostic figures - upsampled reference image and upsampled deformed image
-fig1 = plt.figure() # create a figure with the default size 
-ax1 = fig1.add_subplot(2,2,1) 
-f1 = ax1.pcolor(img_us_ref)
-ax1.set_title('upsampled reference image')
-fig1.colorbar(f1, ax=ax1)
+fig1 = plt.figure()
+plt.pcolor(img_us_ref, cmap = 'gray')
+plt.title('upsampled reference image')
+plt.colorbar()
+plt.clim([0, 255])
 
 fig2 = plt.figure()
 plt.pcolor(img_us_def, cmap = 'gray')
