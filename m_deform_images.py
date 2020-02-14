@@ -29,17 +29,21 @@ from os import listdir
 import numpy as np; import math as m
 from matplotlib import pyplot as plt
 from PIL import Image
+import pandas as pd
 import numpy.matlib
 from scipy.interpolate import interp2d, griddata
+from f_generate_deformed_image_stack import deform_images
 
-os.chdir(r"Z:\Experiments\drop_tower\sa5_images")
+os.chdir(r"Z:\Python\image_deformation\sample_speckle_images")
 # varify the path using getcwd() 
 cwd = os.getcwd() 
 
-filename = cwd+'/img_test2.jpg' # hardcode the location of the figure
+# ---------------------- load in reference image ------------------------------
+filename = cwd+'/hc_reference_dic_challenge_1.tif' # hardcode the location of the figure
 
 img_ref = Image.open(filename) # open image
-
+'''
+# for rgb images
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
@@ -47,6 +51,8 @@ imarray = np.asarray(img_ref) # convert image to array
 
 imarray_grey = rgb2gray(imarray)
 img_ref = imarray_grey 
+'''
+imarray_grey = np.asarray(img_ref) # greylevel images
 
 Ny, Nx = imarray_grey.shape # find size of image
 imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
@@ -135,8 +141,47 @@ plt.pcolor(y_def, cmap = 'gray')
 plt.title('upsampled y-displacement field')
 plt.colorbar()
 # -----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
+# --------------------------- create classes ----------------------------------
+# store variables in classes to pass to functions
+# an empty class of upsampled coordinates
+class coords_us:
+    pass
 
+coords_us = coords_us()
+
+# create coordinate data frame 
+coords_us.x_mesh = x_us_mesh
+coords_us.y_mesh = y_us_mesh
+coords_us.x = x_us_vec
+coords_us.y = y_us_vec
+coords_us.Nx = Nx_us
+coords_us.Ny = Ny_us
+
+# an empty class of original coordinates
+class coords_ref:
+    pass
+
+coords_ref = coords_ref()
+
+# create coordinate data frame 
+coords_ref.x_mesh = x_orig_mesh
+coords_ref.y_mesh = y_orig_mesh
+coords_ref.x = x_orig_vec
+coords_ref.y = y_orig_vec
+coords_ref.Nx = Nx
+coords_ref.Ny = Ny
+
+# an empty class of deformation fields
+class disp:
+    pass
+
+disp = disp()
+disp.x = x_def
+disp.y = y_def
+
+img_us_def = deform_images(img_us_ref,coords_us,coords_ref,disp)
+'''
 # create deformed coordinate matrices based on prescribed displacement fields      
 x_us_mesh_def = x_us_mesh - x_def # shift the original upsampled x coordinates by the prescribed deformation
 y_us_mesh_def = y_us_mesh - y_def # shift the original upsampled y coordinates by the prescribed deformation
@@ -149,7 +194,7 @@ img_us_refV = np.reshape(img_us_ref,Nx_us*Ny_us) # reshape upsampled reference i
 print('Interpolating to deformed positions')
 # interpolate image to upsampled grid
 img_us_def = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (x_us_mesh, y_us_mesh), method ='cubic')
-
+'''
 # plot diagnostic figures - upsampled reference image and upsampled deformed image
 fig1 = plt.figure()
 plt.pcolor(img_us_ref, cmap = 'gray')
@@ -171,17 +216,6 @@ for i in range(0,Ny):
         ind_row2 = (i+1)*(sample_factor)-1
         ind_col1 = j*sample_factor
         ind_col2 = (j+1)*(sample_factor)-1
-        
-        if i ==0 and j ==0:
-            print(ind_row1)
-            print(ind_row2)
-            print(ind_col1)
-            print(ind_col2)
-        elif i ==5 and j ==0:
-            print(ind_row1)
-            print(ind_row2)
-            print(ind_col1)
-            print(ind_col2)
         
         # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
         img_def[i,j] = np.mean(img_us_def[ind_row1:ind_row2,ind_col1:ind_col2])
