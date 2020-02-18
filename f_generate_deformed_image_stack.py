@@ -11,10 +11,9 @@ from scipy.interpolate import interp2d, griddata
 # load in displacement fields and generate image stack stored in img_def
 
 def deform_images(img_us_ref,coords_us,coords_ref,disp,num_def_steps):
+    img_us_def = np.zeros((coords_us.Ny,coords_us.Nx,num_def_steps))
     for i in range(0,num_def_steps):
         print('Image: '+str(i+1)+' of '+str(num_def_steps)+'...')
-        
-        img_us_def = np.zeros((coords_us.Ny,coords_us.Nx,num_def_steps))
         
         # create deformed coordinate matrices based on prescribed displacement fields      
         x_us_mesh_def = coords_us.x_mesh - disp.x[:,:,i] # shift the original upsampled x coordinates by the prescribed deformation
@@ -29,4 +28,4 @@ def deform_images(img_us_ref,coords_us,coords_ref,disp,num_def_steps):
         # interpolate image to upsampled grid
         img_us_def[:,:,i] = griddata((x_us_mesh_defV,y_us_mesh_defV), img_us_refV, (coords_us.x_mesh, coords_us.y_mesh), method ='cubic') # cubic interpolation
         
-        return img_us_def
+    return img_us_def

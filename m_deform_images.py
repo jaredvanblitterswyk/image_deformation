@@ -34,17 +34,20 @@ import pandas as pd
 import numpy.matlib
 from scipy.interpolate import interp2d, griddata
 import scipy
-from f_generate_deformed_image_stack import deform_images
+
 
 os.chdir(r"Z:\Python\image_deformation")
 # varify the path using getcwd() 
 cwd = os.getcwd() 
 
+from f_generate_deformed_image_stack import deform_images
+
 image_dir = 'Z:/Python/image_deformation/rigid_body_translation' # directory where main images will be stored
 
-image_name_prefix = 'hc_dic_' # prefix of image name - will be followed by descriptor (i.e: rigid body tranlsation of 1 pixel in x, 0 in y would be image_name_prefix_10x_00y)
-
-image_name_ref = image_name_prefix+'00x_00y.tif' # name of reference image
+#image_name_prefix = 'hc_dic_' # prefix of image name - will be followed by descriptor (i.e: rigid body tranlsation of 1 pixel in x, 0 in y would be image_name_prefix_10x_00y)
+image_name_prefix = 'hc_reference_s' # prefix of image name
+#image_name_ref = image_name_prefix+'00x_00y.tiff' # name of reference image
+image_name_ref = image_name_prefix+'.tiff' # name of reference image
 # ---------------------- load in reference image ------------------------------
 #filename = image_dir+'/hc_reference_dic_challenge_1.tif' # hardcode the location of the figure
 
@@ -65,7 +68,7 @@ Ny, Nx = imarray_grey.shape # find size of image
 imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
 
 #%% Up sample image to perform sub-pixel interpolation
-sample_factor = 5 # integer scale factor for upsampled image resolution
+sample_factor = 10 # integer scale factor for upsampled image resolution
 x_orig_vec = np.linspace(0,Nx,Nx) # original x coordinates in vector form
 y_orig_vec = np.linspace(0,Ny,Ny) # original y coordinates in vector form
 
@@ -104,14 +107,35 @@ plt.title('upsampled reference image')
 plt.colorbar()
 plt.clim([0, 255])
 '''
+img_ref = np.zeros((Ny,Nx))
+for i in range(0,Ny):
+    for j in range(0,Nx):
+        ind_row1 = i*sample_factor
+        ind_row2 = (i+1)*(sample_factor)-1
+        ind_col1 = j*sample_factor
+        ind_col2 = (j+1)*(sample_factor)-1
+        
+        # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
+        img_ref[i,j] = np.mean(img_us_ref[ind_row1:ind_row2,ind_col1:ind_col2])
+        
+# save reference image to file
+print('Saving images to file...')
+print('Image: 0...')
+filename = image_dir+'/'+image_name_prefix+'0_s.tiff'
+print(filename)
 
+im = Image.fromarray(img_ref[:,:].astype(np.uint8))
+im.save(filename)
 #%%  define displacement fields and interpolate                       
 # ----------------- define rigid-body displacement fields ---------------------
 # sub-pixel shift up to 1 pixel
-num_def_steps = 2
+num_def_steps = 5
 rows,cols = img_us_ref.shape
 x_def = np.zeros((rows,cols,num_def_steps))
 y_def = np.zeros((rows,cols,num_def_steps))
+x_us_mesh_def = np.zeros((rows,cols,num_def_steps))
+y_us_mesh_def = np.zeros((rows,cols,num_def_steps))
+
 
 for i in range(0,num_def_steps):
     print((i+1)/num_def_steps)
@@ -197,21 +221,11 @@ print('Complete.')
 # define strings describing displacements for each image
 disp_inc_str_x = ["{0:02}".format(int(np.mean(np.mean(disp.x[:,:,i]*10)))) for i in range(0,num_def_steps)]
 disp_inc_str_y = ["{0:02}".format(int(np.mean(np.mean(disp.y[:,:,i]*10)))) for i in range(0,num_def_steps)]
-
-# save images to file
-print('Saving images to file...')
-for i in range(0,num_def_steps):
-    print('Image: '+str(i+1)+' of '+str(num_def_steps)+'...')
-    filename = image_dir+'/'+image_name_prefix+disp_inc_str_x[i]+'x_'+disp_inc_str_y[i]+'y.tiff'
-    print(filename)
-    
-    im = Image.fromarray(img_us_def[:,:,i].astype(np.uint8))
-    im.save(filename)
-
 '''
-# create deformed coordinate matrices based on prescribed displacement fields      
-x_us_mesh_def = x_us_mesh - x_def # shift the original upsampled x coordinates by the prescribed deformation
-y_us_mesh_def = y_us_mesh - y_def # shift the original upsampled y coordinates by the prescribed deformation
+# create deformed coordinate matrices based on prescribed displacement fields
+for i in range(0,num_def_steps):      
+    x_us_mesh_def[:,:,i] = x_us_mesh - x_def[:,:,i] # shift the original upsampled x coordinates by the prescribed deformation
+    y_us_mesh_def[:,:,i] = y_us_mesh - y_def[:,:,i] # shift the original upsampled y coordinates by the prescribed deformation
 
 x_us_mesh_defV = np.reshape(x_us_mesh_def,Nx_us*Ny_us) # deformed x coordinates from mesh in vector form for griddata interpolation 
 y_us_mesh_defV = np.reshape(y_us_mesh_def,Nx_us*Ny_us) # deformed y coordinates from mesh in vector form for griddata interpolation
@@ -238,16 +252,30 @@ plt.clim([0, 255])
 '''
 
 #%% down-sample to original image resolution
-img_def = np.zeros((Ny,Nx))
-for i in range(0,Ny):
-    for j in range(0,Nx):
-        ind_row1 = i*sample_factor
-        ind_row2 = (i+1)*(sample_factor)-1
-        ind_col1 = j*sample_factor
-        ind_col2 = (j+1)*(sample_factor)-1
+img_def = np.zeros((Ny,Nx,num_def_steps))
+for k in range(0,num_def_steps):
+    for i in range(0,Ny):
+        for j in range(0,Nx):
+            ind_row1 = i*sample_factor
+            ind_row2 = (i+1)*(sample_factor)-1
+            ind_col1 = j*sample_factor
+            ind_col2 = (j+1)*(sample_factor)-1
+            
+            # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
+            img_def[i,j,k] = np.mean(img_us_def[ind_row1:ind_row2,ind_col1:ind_col2,k])
         
-        # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
-        img_def[i,j] = np.mean(img_us_def[ind_row1:ind_row2,ind_col1:ind_col2])
+        
+# save images to file
+print('Saving images to file...')
+for i in range(0,num_def_steps):
+    print('Image: '+str(i+1)+' of '+str(num_def_steps)+'...')
+    filename = image_dir+'/'+image_name_prefix+disp_inc_str_x[i]+'x_'+disp_inc_str_y[i]+'y.tiff'
+    print(filename)
+    
+    im = Image.fromarray(img_def[:,:,i].astype(np.uint8))
+    im.save(filename)
+
+'''        
 
 # diagnostic figure - downsampled deformed image
 fig3 = plt.figure()
@@ -255,3 +283,4 @@ plt.pcolor(img_def, cmap = 'gray')
 plt.title('original resolution deformed image')
 plt.colorbar()
 plt.clim([0, 255])
+'''
