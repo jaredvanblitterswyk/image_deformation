@@ -45,7 +45,7 @@ from f_generate_deformed_image_stack import deform_images
 image_dir = 'Z:/Python/image_deformation/rigid_body_translation' # directory where main images will be stored
 
 #image_name_prefix = 'hc_dic_' # prefix of image name - will be followed by descriptor (i.e: rigid body tranlsation of 1 pixel in x, 0 in y would be image_name_prefix_10x_00y)
-image_name_prefix = 'hc_dic_reu_ref1' # prefix of image name
+image_name_prefix = 'qi_dic_ref1_crop' # prefix of image name
 #image_name_ref = image_name_prefix+'00x_00y.tiff' # name of reference image
 image_name_ref = image_name_prefix+'.tiff' # name of reference image
 # ---------------------- load in reference image ------------------------------
@@ -68,7 +68,7 @@ Ny, Nx = imarray_grey.shape # find size of image
 imarray = np.reshape(imarray_grey,Nx*Ny) # reshape to vector for griddata interpolation
 
 #%% Up sample image to perform sub-pixel interpolation
-sample_factor = 10 # integer scale factor for upsampled image resolution
+sample_factor = 4 # integer scale factor for upsampled image resolution
 x_orig_vec = np.linspace(0,Nx-1,Nx) # original x coordinates in vector form
 y_orig_vec = np.linspace(0,Ny-1,Ny) # original y coordinates in vector form
 
@@ -87,7 +87,7 @@ Ny_us, Nx_us = x_us_mesh.shape # shape (rows, vectors) of upsampled image
 
 x_us_meshV = np.reshape(x_us_mesh,Nx_us*Ny_us) # upsampled original x coordinates from mesh in vector form for griddata interpolation
 y_us_meshV = np.reshape(y_us_mesh,Nx_us*Ny_us) # upsampled original y coordinates from mesh in vector form for griddata interpolation
-
+'''
 # interpolate image to upsampled grid
 print('Upsampling reference image...')
 # upsample image using cubic grid interpolation
@@ -109,11 +109,6 @@ for i in range(0,Ny):
         # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
         img_us_ref[ind_row1:ind_row2,ind_col1:ind_col2] = imarray_grey[i,j]
 
-# interpolate with zero shift        
-print('Numerically deforming images...')
-img_us_def = deform_images(img_us_ref,coords_us,coords_ref,disp,num_def_steps)
-print('Complete.')
-'''
 # -----------------------------------------------------------------------------
 
 # plot diagnostic figures - original resolution reference image and upsampled reference image
@@ -163,8 +158,10 @@ y_us_mesh_def = np.zeros((rows,cols,num_def_steps))
 
 
 for i in range(0,num_def_steps):
-    print((i+1)/num_def_steps)
-    x_def[:,:,i] = (i+1)/num_def_steps*np.ones((rows,cols))
+    x_vec = np.linspace(0,0,Nx_us)
+    y_vec = np.linspace(0,-1*(i+1),Ny_us)
+    xx,yy = np.meshgrid(x_vec,y_vec)
+    y_def[:,:,i] = yy
     
 
 '''
@@ -282,9 +279,9 @@ for k in range(0,num_def_steps):
     for i in range(0,Ny):
         for j in range(0,Nx):
             ind_row1 = i*sample_factor
-            ind_row2 = (i+1)*(sample_factor)-1
+            ind_row2 = (i+1)*(sample_factor)
             ind_col1 = j*sample_factor
-            ind_col2 = (j+1)*(sample_factor)-1
+            ind_col2 = (j+1)*(sample_factor)
             
             # average grey levels in upsampled image over upsampled window size (sample_factor*sample_factor) to return image to original resolution
             img_def[i,j,k] = np.mean(img_us_def[ind_row1:ind_row2,ind_col1:ind_col2,k])
