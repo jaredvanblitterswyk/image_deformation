@@ -45,7 +45,7 @@ from f_generate_deformed_image_stack import deform_images
 image_dir = 'Z:/Python/image_deformation/rigid_body_translation' # directory where main images will be stored
 
 #image_name_prefix = 'hc_dic_' # prefix of image name - will be followed by descriptor (i.e: rigid body tranlsation of 1 pixel in x, 0 in y would be image_name_prefix_10x_00y)
-image_name_prefix = 'qi_dic_ref1_crop' # prefix of image name
+image_name_prefix = 'hc_dots_soft_dic_reu_ref' # prefix of image name
 #image_name_ref = image_name_prefix+'00x_00y.tiff' # name of reference image
 image_name_ref = image_name_prefix+'.tiff' # name of reference image
 # ---------------------- load in reference image ------------------------------
@@ -158,10 +158,11 @@ y_us_mesh_def = np.zeros((rows,cols,num_def_steps))
 
 
 for i in range(0,num_def_steps):
-    x_vec = np.linspace(0,0,Nx_us)
-    y_vec = np.linspace(0,-1*(i+1),Ny_us)
+    x_vec = np.linspace(0,-1*(i+1),Nx_us)
+    y_vec = np.linspace(0,0,Ny_us)
     xx,yy = np.meshgrid(x_vec,y_vec)
     y_def[:,:,i] = yy
+    x_def[:,:,i] = xx
     
 
 '''
@@ -291,7 +292,7 @@ for k in range(0,num_def_steps):
 print('Saving images to file...')
 for i in range(0,num_def_steps):
     print('Image: '+str(i+1)+' of '+str(num_def_steps)+'...')
-    filename = image_dir+'/'+image_name_prefix+disp_inc_str_x[i]+'x_'+disp_inc_str_y[i]+'y.tiff'
+    filename = image_dir+'/'+image_name_prefix+str(i+1)+'.tiff'
     print(filename)
     
     im = Image.fromarray(img_def[:,:,i].astype(np.uint8))
